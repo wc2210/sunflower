@@ -5,6 +5,7 @@
 #include <string.h>
 #include <vector>
 #include <memory>
+#include <assert.h>
 
 #include "Common.h"
 
@@ -32,8 +33,8 @@ public:
 
   void clear()
   {		
-    stType* node = nullptr;
-    while(tryPop(node));
+    writePos_ = 0;
+    readPos_ = 0;
   }
 
 	bool full() const { return POS_MOD_BASE(writePos_ + 1) == readPos_;}
@@ -43,24 +44,23 @@ public:
 
 	bool tryPush(const stType& node){ return push_(node);}
 	bool tryPush(stType&& node){ return push_(std::move(node));}
-  bool tryPop(stType* node){
-    if (empty()){
-      return false;
-    }
-    if (node){
-      *node = std::move(queue_[readPos_]);
-    }
-    readPos_ = POS_MOD_BASE(readPos_ + 1);
-    return true;
+
+  stType& top()
+  {
+    assert (LIKELY(not empty()));
+    return queue_[readPos_];
   }
-  /*std::shared_ptr<stType> tryPop() {
-    if (empty()){
-      return std::shared_ptr<stType>();
-    }
-    std::shared_ptr<stType> node = std::make_shared<stType>(std::move(queue_[readPos_]));
+
+  const stType& top() const 
+  {
+    assert (LIKELY(not empty()));
+    return queue_[readPos_];
+  }
+
+  void pop(){
+    assert (LIKELY(not empty()));
     readPos_ = POS_MOD_BASE(readPos_ + 1);
-    return node;
-  }*/
+  }
 
 private:
   template <typename T>
@@ -77,10 +77,10 @@ private:
 
 private:
   std::vector<stType>  queue_;
-  volatile  size_t     readPos_    = 0;
-  volatile  size_t     writePos_   = 0;
-  uint32_t             capacity_   = 0;
-  uint32_t             mask_       = 0;
+  volatile size_t     readPos_    = 0;
+  volatile size_t     writePos_   = 0;
+  size_t     capacity_   = 0;
+  size_t     mask_       = 0;
 };
 }//namespace sunflower
 #endif //RECYCLEQUEUE_H

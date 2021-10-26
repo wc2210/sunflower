@@ -30,7 +30,7 @@ void QueueTryRead(T& queue, const char* thread_name, int cnt)
   gettimeofday(&timestamp[1], NULL);
 
 	while (n > 0) {
-    if (queue.tryPop(&value)){
+    if (queue.tryPop(value)){
 			//std::cout << "Pop:" << value << std::endl;
     	n--;
     }
@@ -43,6 +43,28 @@ void QueueTryRead(T& queue, const char* thread_name, int cnt)
   printf("%s read time interval:%luus\n", thread_name, timestamp[0].tv_sec * 1000000 + timestamp[0].tv_usec);
 }
 
+template <typename T>
+void QueueRead(T& queue, const char* thread_name, int cnt)
+{
+  int n = cnt;
+  int value;
+  struct timeval timestamp[3];
+
+  gettimeofday(&timestamp[1], NULL);
+
+	while (n > 0) {
+    if (not queue.empty()){
+			queue.pop();
+    	n--;
+    }
+  }
+
+  gettimeofday(&timestamp[2], NULL);
+  
+  GetTimeInterval(timestamp);
+  
+  printf("%s read time interval:%luus\n", thread_name, timestamp[0].tv_sec * 1000000 + timestamp[0].tv_usec);
+}
 template <typename T>
 void QueueWaitRead(T& queue, const char* thread_name, int cnt)
 {
@@ -111,7 +133,7 @@ void test1()
 {
   RecycleQueue<int> queue(20);
   std::vector<std::thread> vecThread;
-  vecThread.push_back(std::thread(QueueTryRead<RecycleQueue<int>>, std::ref(queue), "test1_tryread_1", 100000000));
+  vecThread.push_back(std::thread(QueueRead<RecycleQueue<int>>, std::ref(queue), "test1_tryread_1", 100000000));
   vecThread.push_back(std::thread(QueueTryWrite<RecycleQueue<int>>, std::ref(queue), "test1_trywrite_1", 100000000));
   for (auto& e : vecThread) {
 		e.join();

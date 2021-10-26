@@ -50,10 +50,10 @@ public:
   bool tryPush(stType&& node){ return tryPushTail(std::move(node));}
   void waitPush(const stType& node){ waitPushTail(node);}
   void waitPush(stType&& node){ waitPushTail(std::move(node));} 
-  bool tryPop(stType* node){ return tryPopHead(node);}
+  bool tryPop(stType& node){ return tryPopHead(node);}
   stType waitPop(){ 
-    stType value = stType();
-    waitPopHead(&value);
+    stType value{};
+    waitPopHead(value);
     return value;
   }
  
@@ -97,7 +97,7 @@ private:
     return true;
   }
 
-  bool tryPopHead(stType* node)
+  bool tryPopHead(stType& node)
   {
     {
       std::lock_guard<std::mutex> lck(mutexWrite);
@@ -105,9 +105,7 @@ private:
         return false;
       }
 
-      if (node) {
-        *node = queue_[readPos_];
-      }
+      node = std::move(queue_[readPos_]);
       readPos_ = POS_MOD_BASE(readPos_ + 1);
     }
     used_--;
@@ -115,15 +113,13 @@ private:
     return true;
   }
   
-  void waitPopHead(stType* node)
+  void waitPopHead(stType& node)
   {
     {
       std::unique_lock<std::mutex> lck(mutexWrite);
       cvEmpty.wait(lck, [this]{ return !empty();});
     
-      if (node) {
-        *node = queue_[readPos_];
-      }
+      node = std::move(queue_[readPos_]);
       readPos_ = POS_MOD_BASE(readPos_ + 1);
     }
     used_--;

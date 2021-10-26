@@ -58,10 +58,10 @@ public:
   bool tryPush(stType&& node){ return push_(std::move(node), false);}
   void waitPush(const stType& node){ push_(node, true);}
   void waitPush(stType&& node){ push_(std::move(node), true);} 
-  bool tryPop(stType* node){ return pop_(node, false);}
+  bool tryPop(stType& node){ return pop_(node, false);}
   stType waitPop(){ 
-    stType value = stType();
-    pop_(&value, true);
+    stType value{};
+    pop_(value, true);
     return value;
   }
   
@@ -94,7 +94,7 @@ private:
     return true;
   }
 
-  bool pop_(stType* node, bool block)
+  bool pop_(stType& node, bool block)
   {
     {
       std::unique_lock<std::mutex> lck(mutex);
@@ -106,9 +106,7 @@ private:
       } else {
         cv_empty.wait(lck, [this]{ return !(writePos_ == readPos_);});
       }
-      if (node) {
-        *node = std::move(queue_[readPos_]);
-      }
+      node = std::move(queue_[readPos_]);
       readPos_ = POS_MOD_BASE(readPos_ + 1);
     }
     cv_full.notify_one();
