@@ -7,94 +7,97 @@
 #include <unistd.h>
 
 #ifdef PER_THREAD_PRIO
-#define DEFAULT_PRIORITY 60 
+#define DEFAULT_PRIORITY 60
 #endif
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif // __cplusplus
 
-bool threads_new_rt(pthread_t* thread, void* (*start_routine)(void*), void* arg);
-bool threads_new_rt_prio(pthread_t* thread, void* (*start_routine)(void*), void* arg, int prio_offset);
-bool threads_new_rt_cpu(pthread_t* thread, void* (*start_routine)(void*), void* arg, int cpu, int prio_offset);
-bool threads_new_rt_mask(pthread_t* thread, void* (*start_routine)(void*), void* arg, int mask, int prio_offset);
-void threads_print_self();
+    bool threads_new_rt(pthread_t *thread, void *(*start_routine)(void *), void *arg);
+    bool threads_new_rt_prio(pthread_t *thread, void *(*start_routine)(void *), void *arg, int prio_offset);
+    bool threads_new_rt_cpu(pthread_t *thread, void *(*start_routine)(void *), void *arg, int cpu, int prio_offset);
+    bool threads_new_rt_mask(pthread_t *thread, void *(*start_routine)(void *), void *arg, int mask, int prio_offset);
+    void threads_print_self();
 
 #ifdef __cplusplus
 }
 
 #include <string>
 
-namespace sunflower {
-	
-class thread
+namespace sunflower
 {
-public:
-  thread(const std::string& name_) : _thread(0), name(name_) {}
 
-  thread(const thread&) = delete;
+    class thread
+    {
+    public:
+        thread(const std::string &name_) : _thread(0), name(name_) {}
 
-  thread(thread&& other) noexcept
-  {
-    _thread       = other._thread;
-    name          = std::move(other.name);
-    other._thread = 0;
-    other.name    = "";
-  }
+        thread(const thread &) = delete;
 
-  virtual ~thread() = default;
+        thread(thread &&other) noexcept
+        {
+            _thread = other._thread;
+            name = std::move(other.name);
+            other._thread = 0;
+            other.name = "";
+        }
 
-  thread& operator=(const thread&) = delete;
+        virtual ~thread() = default;
 
-  thread& operator=(thread&&) noexcept = delete;
+        thread &operator=(const thread &) = delete;
 
-  bool start(int prio = -1) { return threads_new_rt_prio(&_thread, thread_function_entry, this, prio); }
+        thread &operator=(thread &&) noexcept = delete;
 
-  bool start_cpu(int prio, int cpu) { return threads_new_rt_cpu(&_thread, thread_function_entry, this, cpu, prio); }
+        bool start(int prio = -1) { return threads_new_rt_prio(&_thread, thread_function_entry, this, prio); }
 
-  bool start_cpu_mask(int prio, int mask)
-  {
-    return threads_new_rt_mask(&_thread, thread_function_entry, this, mask, prio);
-  }
+        bool start_cpu(int prio, int cpu) { return threads_new_rt_cpu(&_thread, thread_function_entry, this, cpu, prio); }
 
-  void print_priority() { threads_print_self(); }
+        bool start_cpu_mask(int prio, int mask)
+        {
+            return threads_new_rt_mask(&_thread, thread_function_entry, this, mask, prio);
+        }
 
-  void set_name(const std::string& name_)
-  {
-    name = name_;
-    pthread_setname_np(pthread_self(), name.c_str());
-  }
+        void print_priority() { threads_print_self(); }
 
-  void wait_thread_finish() { pthread_join(_thread, NULL); }
+        void set_name(const std::string &name_)
+        {
+            name = name_;
+            pthread_setname_np(pthread_self(), name.c_str());
+        }
 
-  void thread_cancel() { pthread_cancel(_thread); }
+        void wait_thread_finish() { pthread_join(_thread, NULL); }
 
-  static std::string get_name()
-  {
-    const uint32_t  MAX_LEN       = 16;
-    char            name[MAX_LEN] = {};
-    const pthread_t tid           = pthread_self();
-    if (pthread_getname_np(tid, name, MAX_LEN)) {
-      perror("Could not get pthread name");
-    }
-    return std::string(name);
-  }
+        void thread_cancel() { pthread_cancel(_thread); }
 
-protected:
-  virtual void run_thread() = 0;
+        static std::string get_name()
+        {
+            const uint32_t MAX_LEN = 16;
+            char name[MAX_LEN] = {};
+            const pthread_t tid = pthread_self();
+            if (pthread_getname_np(tid, name, MAX_LEN))
+            {
+                perror("Could not get pthread name");
+            }
+            return std::string(name);
+        }
 
-private:
-  static void* thread_function_entry(void* _this)
-  {
-    pthread_setname_np(pthread_self(), ((thread*)_this)->name.c_str());
-    ((thread*)_this)->run_thread();
-    return NULL;
-  }
+    protected:
+        virtual void run_thread() = 0;
 
-  pthread_t   _thread;
-  std::string name;
-};
-}//namespace sunflower
+    private:
+        static void *thread_function_entry(void *_this)
+        {
+            pthread_setname_np(pthread_self(), ((thread *)_this)->name.c_str());
+            ((thread *)_this)->run_thread();
+            return NULL;
+        }
+
+        pthread_t _thread;
+        std::string name;
+    };
+} //namespace sunflower
 
 #endif // __cplusplus
 #endif // BASE_THREADS_H
