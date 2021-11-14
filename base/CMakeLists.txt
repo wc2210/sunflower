@@ -1,5 +1,7 @@
 set(base_SRCS
-  threads.cc
+  Hash.cc
+  ThreadPool.cc
+  TaskThreadPool.cc
   )
 
 add_library(sunflower_base ${base_SRCS})
