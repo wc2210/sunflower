@@ -19,7 +19,7 @@ namespace sunflower
 
         if (task)
         {
-            *task = _parent->_pendingTask.waitPop();
+            *task = std::move(_parent->_pendingTask.waitPop());
         }
 
         return true;
@@ -41,9 +41,9 @@ namespace sunflower
     }
 
     TaskThreadPool::TaskThreadPool(uint32_t workerNum, uint32_t queuePow)
-        : _pendingTask(queuePow)
+        : _workerNum(workerNum), _pendingTask(queuePow)
     {
-        _vecWorker.resize(workerNum);
+        _vecWorker.resize(_workerNum);
         Start();
     }
 
@@ -91,6 +91,13 @@ namespace sunflower
         if (_started)
         {
             _started = false;
+
+            auto stop = []() {};
+            for (uint32_t i = 0; i < _workerNum; i++)
+            {
+                WaitPushTask(stop);
+            }
+
             for (auto &e : _vecWorker)
             {
                 e->Stop();

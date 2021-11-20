@@ -18,7 +18,7 @@ namespace sunflower
     class RecycleQueueBlockThreadSafeTwo
     {
     public:
-        explicit RecycleQueueBlockThreadSafeTwo(uint32_t power = 10) : used_(0)
+        explicit RecycleQueueBlockThreadSafeTwo(uint32_t power = 10) : readPos_(0), writePos_(0), used_(0)
         {
             if (power > 32)
             {
@@ -81,9 +81,9 @@ namespace sunflower
                             { return !full(); });
 
                 queue_[writePos_] = std::forward<T>(node);
-                writePos_ = POS_MOD_BASE(writePos_);
+                writePos_ = POS_MOD_BASE(writePos_ + 1);
+                used_++;
             }
-            used_++;
             cvEmpty.notify_one();
         }
 
@@ -99,9 +99,9 @@ namespace sunflower
                 }
 
                 queue_[writePos_] = std::forward<T>(node);
-                writePos_ = POS_MOD_BASE(writePos_);
+                writePos_ = POS_MOD_BASE(writePos_ + 1);
+                used_++;
             }
-            used_++;
             cvEmpty.notify_one();
             return true;
         }
@@ -117,8 +117,8 @@ namespace sunflower
 
                 node = std::move(queue_[readPos_]);
                 readPos_ = POS_MOD_BASE(readPos_ + 1);
+                used_--;
             }
-            used_--;
             cvFull.notify_one();
             return true;
         }
@@ -132,18 +132,18 @@ namespace sunflower
 
                 node = std::move(queue_[readPos_]);
                 readPos_ = POS_MOD_BASE(readPos_ + 1);
+                used_--;
             }
-            used_--;
             cvFull.notify_one();
         }
 
     private:
         std::vector<stType> queue_;
-        size_t readPos_ = 0;
-        size_t writePos_ = 0;
+        size_t readPos_;
+        size_t writePos_;
         uint32_t capacity_ = 0;
         uint32_t mask_ = 0;
-        std::atomic<uint32_t> used_;
+        std::atomic<size_t> used_;
 
         std::mutex mutexRead = {};
         std::mutex mutexWrite = {};

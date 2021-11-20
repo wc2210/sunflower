@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <unistd.h>
+#include <functional>
 
 using namespace sunflower;
 
@@ -321,6 +322,7 @@ void test13()
     }
     std::cout << "RecycleQueueBlockThreadSafeTwo queue size: " << queue.size() << std::endl;
 }
+
 int main()
 {
     RecycleQueueBlockThreadSafeTwo<int> queue3(20);

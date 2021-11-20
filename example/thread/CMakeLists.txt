@@ -1,4 +1,5 @@
 add_executable(threads_test threads_test.cc)
 target_link_libraries(threads_test sunflower_base)
 
-
+add_executable(task_threads_test task_threads_test.cc)
+target_link_libraries(task_threads_test sunflower_base)
