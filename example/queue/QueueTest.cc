@@ -60,6 +60,7 @@ void QueueRead(T &queue, const char *thread_name, int cnt)
     {
         if (not queue.empty())
         {
+            //std::cout << "pop: " << queue.top() << std::endl;
             queue.pop();
             n--;
         }
